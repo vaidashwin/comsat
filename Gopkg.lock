@@ -18,6 +18,14 @@
   version = "v1.4.1"
 
 [[projects]]
+  digest = "1:79e87abf06b873987dee86598950f5b51732ac454d5a5cab6445a14330e6c9e3"
+  name = "github.com/mattn/go-sqlite3"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b612a2feea6aa87c6d052d9086572551df06497e"
+  version = "v1.11.0"
+
+[[projects]]
   branch = "master"
   digest = "1:e29c6fd0d02e2eef9fe4594b8baaf884ed54c03fd3b2d465a416a9cb49d6c609"
   name = "golang.org/x/crypto"
@@ -38,20 +46,12 @@
   pruneopts = "UT"
   revision = "e8c54fb511f6a2d695a4403ae0dab1c05aef011a"
 
-[[projects]]
-  digest = "1:f342665c0e82930c610789e96de0810d6db048244362ce1d51f895475b64a83e"
-  name = "gopkg.in/go-playground/webhooks.v3"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "8ffb2ffc32b7af2c7e940944eccba4dcd66c692a"
-  version = "v3.13.0"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/bwmarrin/discordgo",
-    "gopkg.in/go-playground/webhooks.v3",
+    "github.com/mattn/go-sqlite3",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

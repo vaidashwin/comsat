@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/vaidashwin/comsat/configuration"
+	"github.com/vaidashwin/comsat/storage"
+	"math/rand"
 	"os/signal"
 	"syscall"
 
@@ -14,18 +17,24 @@ import (
 
 var logfile *string
 var token *string
-var channel *string
+var Config *string
 
 func init() {
 	// cli params
 	token = flag.String("token", "", "Bot token from Discord API.")
 	logfile = flag.String("logfile", "", "Logfile.")
-	channel = flag.String("channel", "general", "TEMP channel to post in.")
+	Config = flag.String("config", "", "Configuration of servers/channels/streams.")
 	flag.Parse()
+
+	if *token == "" || *Config == "" {
+		panic("Token and config must be nonempty.")
+	}
+
+	configuration.InitConfig(*Config)
+	storage.InitStorage()
 }
 
 func main() {
-
 	if *logfile != "" {
 		// init logfile
 		f, err := os.OpenFile(*logfile, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
@@ -44,6 +53,7 @@ func main() {
 
 	// add handlers
 	dg.AddHandler(ready)
+	dg.AddHandler(onGuildCreate)
 
 	// connect!
 	err = dg.Open()
@@ -63,23 +73,42 @@ func main() {
 
 func ready(s *discordgo.Session, event *discordgo.Ready) {
 	log.Println("ComSat Station online!")
-	log.Println("Joining servers: ", event.Guilds)
-
-	for _, server := range event.Guilds {
-		for _, targetChan := range server.Channels {
-			if targetChan.Name == *channel {
-				message, err := s.ChannelMessageSend(targetChan.ID, "Bleep bleep bleep!")
-				if err != nil {
-					log.Println("Error sending message: ", err)
-				} else {
-					log.Println("Sent message ID: " + message.ID)
-				}
-			}
-		}
-	}
-
 	err := s.UpdateStatus(0, "hard to get...")
 	if err != nil {
 		log.Println("Unexpected error: ", err)
 	}
+}
+
+func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
+	log.Println("Joining server:", event.Name)
+	if channel, ok := configuration.Get().ServerToChannel[event.ID]; ok {
+		log.Println("Found channel", channel, "for this server.")
+		casters := []string{"caster"}
+		if messageToEdit := storage.GetMessageIdForGuild(event.ID); messageToEdit != "" {
+			s.ChannelMessageEdit(channel, messageToEdit, getMessage(casters))
+		} else {
+			message, err := s.ChannelMessageSend(channel, getMessage(casters))
+			if err == nil {
+				storage.SetMessageIdForGuild(event.ID, message.ID)
+			}
+		}
+	} else {
+		log.Println("No channel defined for server", event.ID, event.Name)
+	}
+}
+
+func getMessage(casters []string) string {
+	var scanSounds = []string {
+		"Activating maphack!",
+		"Bleep bloop bleep bloop...",
+		"Nice base you got there!",
+		"Don't mind me, just checking your tech.",
+	}
+
+	result := "**" + scanSounds[rand.Intn(len(scanSounds))] + "**\n\n" +
+		"*Active streams*:\n"
+	for _, caster := range casters {
+		result += "* " + caster + "\n"
+	}
+	return result
 }
