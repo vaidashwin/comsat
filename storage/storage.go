@@ -2,17 +2,27 @@ package storage
 
 import (
 	"database/sql"
-	"log"
-
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/vaidashwin/comsat/configuration"
+	"log"
+	"os"
 )
 
 var db *sql.DB
 
 func InitStorage() {
 	var err error
-	db, err = sql.Open("sqlite3", configuration.Get().StorageFile)
+	if _, err := os.Stat(configuration.Get().StorageDirectory + "/comsat.db"); os.IsNotExist(err) {
+		err = os.MkdirAll(configuration.Get().StorageDirectory, 0666)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = os.Create(configuration.Get().StorageDirectory + "/comsat.db")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	db, err = sql.Open("sqlite3", configuration.Get().StorageDirectory + "/comsat.db")
 	if err != nil {
 		log.Fatal(err)
 	}

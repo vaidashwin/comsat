@@ -26,7 +26,7 @@ func InitTwitchhookServer(callback func([]string)) {
 		}
 		w.Write([]byte("OK"))
 	})
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":7547", nil); err != nil {
 		log.Fatal("Error setting up twitch webhooks:", err)
 	}
 }

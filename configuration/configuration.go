@@ -9,7 +9,7 @@ import (
 type Configuration struct {
 	ServerToChannel   map[string]string
 	Streams           []string
-	StorageFile       string
+	StorageDirectory  string
 	TwitchClientID    string
 	TwitchCallbackURL string
 	TwitchSecret      string
@@ -27,6 +27,8 @@ func InitConfig(configfile string) {
 	if err != nil {
 		log.Fatal("Unable to open Configuration file!", err)
 	}
+	result, err := json.Marshal(config)
+	log.Println(string(result))
 }
 
 func Get() *Configuration {
