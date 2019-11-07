@@ -6,11 +6,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/vaidashwin/comsat/configuration"
 	"github.com/vaidashwin/comsat/storage"
+	"github.com/vaidashwin/comsat/twitchhook"
 	"math/rand"
 	"os/signal"
 	"syscall"
 
-	// "gopkg.in/go-playground/webhooks.v3"
 	"log"
 	"os"
 )
@@ -77,6 +77,7 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 	if err != nil {
 		log.Println("Unexpected error: ", err)
 	}
+	twitchhook.InitTwitchhooks(createWebhookCallback(s))
 }
 
 func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
@@ -99,10 +100,7 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 
 func getMessage(casters []string) string {
 	var scanSounds = []string {
-		"Activating maphack!",
-		"Bleep bloop bleep bloop...",
-		"Nice base you got there!",
-		"Don't mind me, just checking your tech.",
+		"Activating my legal maphack!",
 	}
 
 	result := "**" + scanSounds[rand.Intn(len(scanSounds))] + "**\n\n" +
@@ -111,4 +109,12 @@ func getMessage(casters []string) string {
 		result += "* " + caster + "\n"
 	}
 	return result
+}
+
+func createWebhookCallback(s *discordgo.Session) func([]string) {
+	return func(liveCasters []string) {
+		for channelID, messageID := range storage.GetMessages() {
+			s.ChannelMessageEdit(channelID, messageID, getMessage(liveCasters))
+		}
+	}
 }

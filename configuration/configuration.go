@@ -7,9 +7,12 @@ import (
 )
 
 type Configuration struct {
-	ServerToChannel map[string]string
-	Streams         []string
-	StorageFile		string
+	ServerToChannel   map[string]string
+	Streams           []string
+	StorageFile       string
+	TwitchClientID    string
+	TwitchCallbackURL string
+	TwitchSecret      string
 }
 
 var config *Configuration = &Configuration{}

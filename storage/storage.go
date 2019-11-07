@@ -16,7 +16,7 @@ func InitStorage() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	statement, err := db.Prepare("CREATE TABLE IF NOT EXISTS guild_channels (guild_id varchar(64) primary key, channel_id varchar(64))")
+	statement, err := db.Prepare("CREATE TABLE IF NOT EXISTS guild_messages (guild_id varchar(64) primary key, message_id varchar(64))")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func InitStorage() {
 }
 
 func GetMessageIdForGuild(guildID string) string {
-	rows, err := db.Query("SELECT channel_id FROM guild_channels WHERE guild_id = " + guildID)
+	rows, err := db.Query("SELECT message_id FROM guild_messages WHERE guild_id = " + guildID)
 	if err != nil {
 		log.Println(err)
 		return ""
@@ -38,12 +38,28 @@ func GetMessageIdForGuild(guildID string) string {
 	return result
 }
 
-func SetMessageIdForGuild(guildID string, channelID string) {
-	statement, err := db.Prepare("INSERT INTO guild_channels VALUES (?,?)" +
-		"ON CONFLICT(guild_id) DO UPDATE SET channel_id = ? WHERE guild_id = ?")
+func GetMessages() map[string]string {
+	result := make(map[string]string)
+	rows, err := db.Query("SELECT guild_id, message_id FROM guild_messages")
+	if err != nil {
+		log.Println(err)
+		return result
+	}
+	for rows.Next() {
+		var guildID string
+		var messageID string
+		rows.Scan(&guildID, &messageID)
+		result[guildID] = messageID
+	}
+	return result
+}
+
+func SetMessageIdForGuild(guildID string, messageID string) {
+	statement, err := db.Prepare("INSERT INTO guild_messages VALUES (?,?)" +
+		"ON CONFLICT(guild_id) DO UPDATE SET message_id = ? WHERE guild_id = ?")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	statement.Exec(guildID, channelID, channelID, guildID)
+	statement.Exec(guildID, messageID, messageID, guildID)
 }
