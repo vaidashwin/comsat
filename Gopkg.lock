@@ -46,21 +46,12 @@
   pruneopts = "UT"
   revision = "e8c54fb511f6a2d695a4403ae0dab1c05aef011a"
 
-[[projects]]
-  digest = "1:f342665c0e82930c610789e96de0810d6db048244362ce1d51f895475b64a83e"
-  name = "gopkg.in/go-playground/webhooks.v3"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "8ffb2ffc32b7af2c7e940944eccba4dcd66c692a"
-  version = "v3.13.0"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/bwmarrin/discordgo",
     "github.com/mattn/go-sqlite3",
-    "gopkg.in/go-playground/webhooks.v3",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
