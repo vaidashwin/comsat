@@ -61,6 +61,7 @@ func main() {
 		log.Fatal("Failed to connect to Discord: ", err)
 		return
 	}
+	defer dg.Close()
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Press CTRL-C to exit.")
@@ -68,7 +69,6 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	defer dg.Close()
 }
 
 func ready(s *discordgo.Session, event *discordgo.Ready) {
