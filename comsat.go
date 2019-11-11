@@ -33,10 +33,31 @@ func init() {
 	storage.InitStorage()
 }
 
+var messageObject = discordgo.MessageEmbed{
+	Title:       "ComSat Station",
+	Description: "v0.1 - Stream monitoring bot",
+	Color:       3036836,
+	Footer: &discordgo.MessageEmbedFooter{
+		IconURL: "https://i.imgur.com/i42Svek.png",
+	},
+	Image: &discordgo.MessageEmbedImage{
+		URL: "https://i.imgur.com/UbdQ8nj.png",
+	},
+	Thumbnail: &discordgo.MessageEmbedThumbnail{
+		URL: "https://media1.tenor.com/images/24318597c7ce1477f54587dd1616f3e8/tenor.gif",
+	},
+	Author: &discordgo.MessageEmbedAuthor{
+		URL:     "https://github.com/vaidashwin/comsat",
+		Name:    "Created by des",
+		IconURL: "https://i.imgur.com/i42Svek.png",
+	},
+	Fields: nil,
+}
+
 func main() {
 	if configuration.Get().Logfile != "" {
 		// init logfile
-		f, err := os.OpenFile(configuration.Get().Logfile, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0644)
+		f, err := os.OpenFile(configuration.Get().Logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
 			log.Fatalf("error opening file: %v", err)
 		}
@@ -84,10 +105,11 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	log.Println("Joining server:", event.Name)
 	if channel, ok := configuration.Get().ServerToChannel[event.ID]; ok {
 		log.Println("Found channel", channel, "for this server.")
+		updateMessage(nil)
 		if messageToEdit := storage.GetMessageIdForGuild(event.ID); messageToEdit != "" {
-			s.ChannelMessageEdit(channel, messageToEdit, getMessage(nil))
+			s.ChannelMessageEditEmbed(channel, messageToEdit, &messageObject)
 		} else {
-			message, err := s.ChannelMessageSend(channel, getMessage(nil))
+			message, err := s.ChannelMessageSendEmbed(channel, &messageObject)
 			if err == nil {
 				storage.SetMessageIdForGuild(event.ID, message.ID)
 			}
@@ -104,27 +126,22 @@ func onMessage(s *discordgo.Session, event *discordgo.MessageCreate) {
 	}
 }
 
-func getMessage(casters []twitch.StreamData) string {
-	var scanSounds = []string {
+func updateMessage(casters []twitch.StreamData) {
+	var scanSounds = []string{
 		"Activating my legal maphack!",
 		"I'm in ur base lookin at ur doods.",
 		"Tastosis calls it 'starsense' but I call it hacking.",
 	}
-
-	result := "**" + scanSounds[rand.Intn(len(scanSounds))] + "**\n\n" +
-		"*Active streams*:\n"
-	if len(casters) == 0 {
-		result += "No one is casting, banking up another 50 energy."
-	} else {
-		for _, caster := range casters {
-			result += fmt.Sprintf("* %v (%v) - %v [%d viewers]",
-				caster.UserName,
-				caster.URL,
-				caster.Title,
-				caster.Viewers)
+	messageObject.Footer.Text = scanSounds[rand.Intn(len(scanSounds))]
+	streamLinks := make([]*discordgo.MessageEmbedField, len(casters))
+	for index, caster := range casters {
+		streamLinks[index] = &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("%v - %v [%d viewers]", caster.UserName, caster.Title, caster.Viewers),
+			Value:  caster.URL,
 		}
 	}
-	return result
+
+	messageObject.Fields = streamLinks
 }
 
 func createWebhookCallback(s *discordgo.Session) func([]twitch.StreamData) {
@@ -132,7 +149,8 @@ func createWebhookCallback(s *discordgo.Session) func([]twitch.StreamData) {
 		log.Println("Firing callback for casters:", liveCasters)
 		for guildID, messageID := range storage.GetMessages() {
 			channelID := configuration.Get().ServerToChannel[guildID]
-			_, err := s.ChannelMessageEdit(channelID, messageID, getMessage(liveCasters))
+			updateMessage(liveCasters)
+			_, err := s.ChannelMessageEditEmbed(channelID, messageID, &messageObject)
 			if err != nil {
 				log.Println("Got an error updating message?", err)
 			}
