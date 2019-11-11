@@ -9,10 +9,9 @@ import (
 type Configuration struct {
 	ServerToChannel   map[string]string
 	Streams           []string
-	StorageDirectory  string
+	Logfile			  string
 	TwitchClientID    string
-	TwitchCallbackURL string
-	TwitchSecret      string
+	ComsatSecret	  string
 }
 
 var config *Configuration = &Configuration{}

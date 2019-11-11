@@ -3,7 +3,6 @@ package storage
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/vaidashwin/comsat/configuration"
 	"log"
 	"os"
 )
@@ -12,21 +11,30 @@ var db *sql.DB
 
 func InitStorage() {
 	var err error
-	if _, err := os.Stat(configuration.Get().StorageDirectory + "/comsat.db"); os.IsNotExist(err) {
-		err = os.MkdirAll(configuration.Get().StorageDirectory, 0666)
+	if _, err := os.Stat("/etc/storage/comsat.db"); os.IsNotExist(err) {
+		err = os.MkdirAll("/etc/storage", 0666)
 		if err != nil {
 			log.Fatal(err)
 		}
-		_, err = os.Create(configuration.Get().StorageDirectory + "/comsat.db")
+		_, err = os.Create("/etc/storage/comsat.db")
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	db, err = sql.Open("sqlite3", configuration.Get().StorageDirectory + "/comsat.db")
+	db, err = sql.Open("sqlite3", "/etc/storage/comsat.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	statement, err := db.Prepare("CREATE TABLE IF NOT EXISTS guild_messages (guild_id varchar(64) primary key, message_id varchar(64))")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = statement.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	statement, err = db.Prepare("CREATE TABLE IF NOT EXISTS streams (stream_id int primary_key, display_name varchar(64), url varchar(64))")
 	if err != nil {
 		log.Fatal(err)
 	}
