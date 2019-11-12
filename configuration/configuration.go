@@ -8,7 +8,6 @@ import (
 
 type Configuration struct {
 	ServerToChannel   map[string]string
-	Streams           []string
 	Logfile			  string
 	TwitchClientID    string
 	ComsatSecret	  string

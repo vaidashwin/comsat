@@ -3,6 +3,7 @@ package twitch
 import (
 	"encoding/json"
 	"github.com/vaidashwin/comsat/configuration"
+	"github.com/vaidashwin/comsat/storage"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,59 +18,17 @@ func InitTwitch(callback func([]StreamData)) {
 	// get the initial streamer list
 
 	// init http server
-	streamers := getStreamers()
+	streamers := storage.GetTwitchStreamers()
 	pollStatus(streamers, callback)
 }
 
-func getStreamers() []Streamer {
-	queryString := ""
-	for _, streamName := range configuration.Get().Streams {
-		queryString += streamName + "&"
-	}
-
-	req, err := http.NewRequest("GET", "https://api.twitch.tv/helix/users?login=" + queryString, nil)
-	if err != nil {
-		log.Fatal("Failed to get user data.", err)
-	}
-	req.Header.Add("Client-ID", configuration.Get().TwitchClientID)
-	resp, err := client.Do(req)
-
-	if err != nil || resp.Status != "200 OK" {
-		log.Fatal("Failed to get user data.", err)
-	}
-	responseBytes := make([]byte, resp.ContentLength)
-
-	defer resp.Body.Close()
-	_, err = resp.Body.Read(responseBytes)
-	if err != nil {
-		log.Fatal("Failed to get user data.", err)
-	}
-
-	log.Println("Got user data:", string(responseBytes))
-	type userList struct {
-		Data []Streamer `json:"data"`
-	}
-	response := userList{}
-	err = json.Unmarshal(responseBytes, &response)
-	if err != nil {
-		log.Fatal("Failed to parse user data.", err)
-	}
-
-	result := make([]Streamer, len(configuration.Get().Streams))
-	for _, user := range response.Data {
-		result = append(result, user)
-	}
-
-	return result
-}
-
-func pollStatus(streamers []Streamer, callback func([]StreamData)) {
+func pollStatus(streamers []storage.TwitchStreamer, callback func([]StreamData)) {
 	log.Println("Scanning for streams for IDs:", streamers)
 	queryString := ""
 	if len(streamers) > 0 {
 		for _, streamer := range streamers {
-			if streamer.getID() > 0 {
-				queryString += "user_id=" + strconv.Itoa(streamer.getID()) + "&"
+			if streamer.GetID() > 0 {
+				queryString += "user_id=" + strconv.Itoa(streamer.GetID()) + "&"
 			}
 		}
 
@@ -102,39 +61,41 @@ func pollStatus(streamers []Streamer, callback func([]StreamData)) {
 			log.Fatal("Failed to get stream data.", err)
 		}
 
-		streamerMap := make(map[string]string)
-		for _, streamer := range streamers {
-			streamerMap[streamer.ID] = streamer.Login
-		}
-
 		result := respData.Data
-		for _, streamer := range result {
-			streamer.URL = "https://twitch.tv/" + streamerMap[streamer.UserID]
+		for idx, stream := range result {
+			userID, err := strconv.Atoi(stream.UserID)
+			if err != nil {
+				log.Fatal("Problem decoding response from Twitch.", err)
+			}
+			// TODO refactor
+			var thisStreamer *storage.TwitchStreamer
+			for _, streamer := range streamers {
+				if streamer.GetID() == userID {
+					thisStreamer = &streamer
+					break
+				}
+			}
+			result[idx] = StreamData{
+				Streamer: thisStreamer,
+				UserName: stream.UserName,
+				UserID:   stream.UserID,
+				Type:     stream.Type,
+				Title:    stream.Title,
+				Viewers:  stream.Viewers,
+			}
 		}
 
 		log.Println("Scan completed successfully:", result)
 		callback(result)
 		time.Sleep(5 * time.Minute)
-	}
-	go pollStatus(streamers, callback)
-}
-
-type Streamer struct {
-	ID string `json:"id"`
-	Login string `json:"login"`
-}
-
-func (streamer *Streamer) getID() int {
-	id, err := strconv.Atoi(streamer.ID)
-	if err != nil {
-		return -1
 	} else {
-		return id
+		time.Sleep(30 * time.Second)
 	}
+	go pollStatus(storage.GetTwitchStreamers(), callback)
 }
 
 type StreamData struct {
-	URL string
+	Streamer *storage.TwitchStreamer
 	UserName string `json:"user_name"`
 	UserID string `json:"user_id"`
 	Type string `json:"type"`

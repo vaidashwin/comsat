@@ -122,6 +122,26 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 func onMessage(s *discordgo.Session, event *discordgo.MessageCreate) {
 	if configuration.Get().ComsatSecret != "" &&
 		strings.HasPrefix(event.Message.Content, configuration.Get().ComsatSecret) {
+		tokens := strings.Split(strings.TrimPrefix(event.Message.Content, configuration.Get().ComsatSecret+" "), " ")
+		log.Println(tokens)
+		if len(tokens) <= 0 {
+			return
+		}
+		switch tokens[0] {
+		case "addTwitchStreamers":
+			log.Println("Adding streamers...")
+			streamers := make(map[string]string)
+			for alias := 1; alias < len(tokens)-1; alias += 2 {
+				streamerAlias := tokens[alias]
+				streamName := tokens[alias+1]
+				streamers[streamName] = streamerAlias
+			}
+			log.Println("New streamers:", streamers)
+			err := storage.AddTwitchStreamers(streamers)
+			if err != nil {
+				log.Println("Error adding twitch streamers:", err)
+			}
+		}
 		log.Println("Bot message created:", event.ID)
 	}
 }
@@ -136,8 +156,8 @@ func updateMessage(casters []twitch.StreamData) {
 	streamLinks := make([]*discordgo.MessageEmbedField, len(casters))
 	for index, caster := range casters {
 		streamLinks[index] = &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("%v - %v [%d viewers]", caster.UserName, caster.Title, caster.Viewers),
-			Value:  caster.URL,
+			Name:  caster.Streamer.GetAlias(),
+			Value: fmt.Sprintf("%v - %v [%d viewers]", caster.Streamer.GetLink(), caster.Title, caster.Viewers),
 		}
 	}
 
