@@ -157,7 +157,8 @@ func updateMessage(casters []twitch.StreamData) {
 	for index, caster := range casters {
 		streamLinks[index] = &discordgo.MessageEmbedField{
 			Name:  caster.Streamer.GetAlias(),
-			Value: fmt.Sprintf("%v - %v [%d viewers]", caster.Streamer.GetLink(), caster.Title, caster.Viewers),
+			Value: fmt.Sprintf("[Watch!](%v) [%d :eyes:]", caster.Streamer.GetLink(), caster.Viewers),
+			Inline: true,
 		}
 	}
 
